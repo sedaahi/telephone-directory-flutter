@@ -305,12 +305,20 @@ class _ContactProfilePageState extends State<ContactProfilePage> {
     }
   }
 
-  void _openEditForm() {
-    Navigator.of(context).push(
+  Future<void> _openEditForm() async {
+    final updated = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => ContactFormPage(initialContact: widget.contact),
       ),
     );
+
+    if (updated == true && mounted) {
+      // Listeyi güncelle
+      context.read<ContactsBloc>().add(const LoadContacts());
+
+      // Profile sayfasını da kapatıp listeye dön
+      Navigator.of(context).pop();
+    }
   }
 
   @override

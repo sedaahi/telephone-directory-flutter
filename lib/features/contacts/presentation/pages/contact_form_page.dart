@@ -110,7 +110,9 @@ class _ContactFormPageState extends State<ContactFormPage> {
                 Lottie.asset('assets/animations/Done.json', repeat: false),
                 const SizedBox(height: 12),
                 Text(
-                  widget.isEdit ? 'The profile has been updated!' : 'The profile has been saved!',
+                  widget.isEdit
+                      ? 'The profile has been updated!'
+                      : 'The profile has been saved!',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
@@ -128,7 +130,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
     );
 
     if (!mounted) return;
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(true);
   }
 
   @override
@@ -143,7 +145,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
           key: _formKey,
           child: Column(
             children: [
-              // FOTOĞRAF / AVATAR 
+              // FOTOĞRAF / AVATAR
               Center(
                 child: GestureDetector(
                   onTap: _pickImage,

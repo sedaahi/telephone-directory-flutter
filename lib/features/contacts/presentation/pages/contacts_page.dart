@@ -99,6 +99,28 @@ class _ContactsPageState extends State<ContactsPage> {
     super.dispose();
   }
 
+  Future<void> _openEditContact(dynamic contact) async {
+    final updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ContactFormPage(initialContact: contact),
+      ),
+    );
+
+    if (updated == true && mounted) {
+      context.read<ContactsBloc>().add(const LoadContacts());
+    }
+  }
+
+  Future<void> _openProfile(dynamic contact) async {
+    // Profile sayfasından geri dönünce de listeyi yenilemek istersen:
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ContactProfilePage(contact: contact)),
+    );
+
+    if (!mounted) return;
+    context.read<ContactsBloc>().add(const LoadContacts());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,7 +143,7 @@ class _ContactsPageState extends State<ContactsPage> {
               );
             }
 
-            // 3) Filtre uygulanmadan önceki liste
+            // 3) Filtre
             final query = state.searchQuery.trim().toLowerCase();
 
             final filteredContacts = query.isEmpty
@@ -139,6 +161,7 @@ class _ContactsPageState extends State<ContactsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Column(
                 children: [
+                  // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -148,19 +171,26 @@ class _ContactsPageState extends State<ContactsPage> {
                             ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const ContactFormPage(),
-                            ),
-                          );
+                        onTap: () async {
+                          final created = await Navigator.of(context)
+                              .push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) => const ContactFormPage(),
+                                ),
+                              );
+
+                          if (created == true && mounted) {
+                            context.read<ContactsBloc>().add(
+                              const LoadContacts(),
+                            );
+                          }
                         },
                         child: Container(
                           width: 32,
                           height: 32,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Color(0xFF1E90FF), // mavi buton
+                            color: Color(0xFF1E90FF),
                           ),
                           child: const Icon(
                             Icons.add,
@@ -174,7 +204,7 @@ class _ContactsPageState extends State<ContactsPage> {
 
                   const SizedBox(height: 16),
 
-                  // ------- SEARCH BAR -------
+                  // Search
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -203,37 +233,24 @@ class _ContactsPageState extends State<ContactsPage> {
                         context.read<ContactsBloc>().add(
                           const LoadSearchHistory(),
                         );
-                        setState(() {
-                          _showHistory = true;
-                        });
+                        setState(() => _showHistory = true);
                       },
                       onChanged: (value) {
                         context.read<ContactsBloc>().add(
                           SearchQueryChanged(value),
                         );
-
-                        if (value.isEmpty) {
-                          setState(() {
-                            _showHistory = true;
-                          });
-                        } else {
-                          setState(() {
-                            _showHistory = false;
-                          });
-                        }
+                        setState(() => _showHistory = value.isEmpty);
                       },
                       onSubmitted: (value) {
                         context.read<ContactsBloc>().add(
                           AddSearchToHistory(value),
                         );
-                        setState(() {
-                          _showHistory = false;
-                        });
+                        setState(() => _showHistory = false);
                       },
                     ),
                   ),
 
-                  // ------- SEARCH HISTORY -------
+                  // Search History
                   if (_showHistory &&
                       state.searchHistory.isNotEmpty &&
                       state.searchQuery.trim().isEmpty) ...[
@@ -275,9 +292,7 @@ class _ContactsPageState extends State<ContactsPage> {
                                 context.read<ContactsBloc>().add(
                                   SearchFromHistory(item),
                                 );
-                                setState(() {
-                                  _showHistory = false;
-                                });
+                                setState(() => _showHistory = false);
                               },
                             ),
                         ],
@@ -287,14 +302,13 @@ class _ContactsPageState extends State<ContactsPage> {
 
                   const SizedBox(height: 8),
 
-                  // ------- LİSTE -------
+                  // Liste
                   Expanded(
                     child: filteredContacts.isEmpty
                         ? const Center(child: Text('No Contacts'))
                         : ListView(
                             children: [
                               for (final entry in groupedContacts.entries) ...[
-                                // Harf başlığı
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 8,
@@ -309,8 +323,6 @@ class _ContactsPageState extends State<ContactsPage> {
                                     ),
                                   ),
                                 ),
-
-                                // Contact kartları
                                 for (final contact in entry.value)
                                   Container(
                                     margin: const EdgeInsets.only(bottom: 8),
@@ -334,15 +346,8 @@ class _ContactsPageState extends State<ContactsPage> {
                                         extentRatio: 0.4,
                                         children: [
                                           SlidableAction(
-                                            onPressed: (context) {
-                                              Navigator.of(context).push(
-                                                MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      ContactFormPage(
-                                                        initialContact: contact,
-                                                      ),
-                                                ),
-                                              );
+                                            onPressed: (_) async {
+                                              await _openEditContact(contact);
                                             },
                                             icon: Icons.edit,
                                             label: 'Edit',
@@ -352,7 +357,7 @@ class _ContactsPageState extends State<ContactsPage> {
                                             foregroundColor: Colors.white,
                                           ),
                                           SlidableAction(
-                                            onPressed: (context) {
+                                            onPressed: (_) {
                                               context.read<ContactsBloc>().add(
                                                 DeleteContact(contact.id),
                                               );
@@ -365,9 +370,7 @@ class _ContactsPageState extends State<ContactsPage> {
                                         ],
                                       ),
                                       child: ListTile(
-                                        leading: buildContactAvatar(
-                                          contact,
-                                        ), // 👈 avatar burada
+                                        leading: buildContactAvatar(contact),
                                         title: Text(
                                           contact.fullName,
                                           style: const TextStyle(
@@ -388,15 +391,8 @@ class _ContactsPageState extends State<ContactsPage> {
                                                 color: Color(0xFF1E90FF),
                                               )
                                             : null,
-                                        onTap: () {
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  ContactProfilePage(
-                                                    contact: contact,
-                                                  ),
-                                            ),
-                                          );
+                                        onTap: () async {
+                                          await _openProfile(contact);
                                         },
                                       ),
                                     ),
