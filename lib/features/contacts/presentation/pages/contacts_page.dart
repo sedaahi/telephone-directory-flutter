@@ -112,7 +112,7 @@ class _ContactsPageState extends State<ContactsPage> {
   }
 
   Future<void> _openProfile(dynamic contact) async {
-    // Profile sayfasından geri dönünce de listeyi yenilemek istersen:
+    // Profile sayfasından geri dönünce de listeyi yenilemek için
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => ContactProfilePage(contact: contact)),
     );
