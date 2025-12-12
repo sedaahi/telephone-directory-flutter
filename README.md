@@ -1,16 +1,29 @@
-# telephone_directory
+# Telephone Directory App
 
-A new Flutter project.
+A Flutter-based mobile contact management application.
 
-## Getting Started
+## Features
+- List contacts with alphabetical grouping
+- Add, edit and delete contacts
+- Upload profile photos (camera / gallery)
+- Save contacts to device phonebook
+- Search contacts with history
+- Backend integration via REST API
+- Clean Architecture + BLoC pattern
 
-This project is a starting point for a Flutter application.
+## Tech Stack
+- Flutter
+- Dart
+- BLoC (flutter_bloc)
+- Dio (API communication)
+- Image Picker
+- Flutter Contacts
+- Clean Architecture
 
-A few resources to get you started if this is your first Flutter project:
+## Run Locally
+1. Clone the repository
+2. Run `flutter pub get`
+3. Make sure an emulator or device is running
+4. Run `flutter run`
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
