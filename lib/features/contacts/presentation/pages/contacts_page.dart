@@ -37,39 +37,47 @@ Map<String, List<dynamic>> groupContactsByFirstLetter(List<dynamic> contacts) {
 Widget buildContactAvatar(dynamic contact) {
   final String? photo = contact.photoUrl;
 
-  if (photo != null && photo.isNotEmpty) {
-    // Fotoğraf varsa, url mi local path mi bak
-    ImageProvider imageProvider;
-    if (photo.startsWith('http')) {
-      imageProvider = NetworkImage(photo);
+  bool isValidHttpUrl(String s) =>
+      s.startsWith('http://') || s.startsWith('https://');
+
+  bool looksLikeBadPlaceholder(String s) =>
+      s.trim().isEmpty || s.trim().toLowerCase() == 'string' || s == 'null';
+
+  if (photo != null && !looksLikeBadPlaceholder(photo)) {
+    if (isValidHttpUrl(photo)) {
+      return CircleAvatar(
+        radius: 20,
+        backgroundImage: NetworkImage(photo),
+        backgroundColor: Colors.grey.shade200,
+      );
     } else {
-      imageProvider = FileImage(File(photo));
+      final file = File(photo);
+      if (file.existsSync()) {
+        return CircleAvatar(
+          radius: 20,
+          backgroundImage: FileImage(file),
+          backgroundColor: Colors.grey.shade200,
+        );
+      }
     }
-
-    return CircleAvatar(
-      radius: 20,
-      backgroundImage: imageProvider,
-      backgroundColor: Colors.grey.shade200,
-    );
-  } else {
-    // Foto yoksa: ismin baş harfi
-    final String letter = contact.fullName.isNotEmpty
-        ? contact.fullName[0].toUpperCase()
-        : '?';
-
-    return CircleAvatar(
-      radius: 20,
-      backgroundColor: const Color(0xFFE3ECFF),
-      child: Text(
-        letter,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF1E90FF),
-        ),
-      ),
-    );
   }
+
+  final String letter = contact.fullName.isNotEmpty
+      ? contact.fullName[0].toUpperCase()
+      : '?';
+
+  return CircleAvatar(
+    radius: 20,
+    backgroundColor: const Color(0xFFE3ECFF),
+    child: Text(
+      letter,
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF1E90FF),
+      ),
+    ),
+  );
 }
 
 class ContactsPage extends StatefulWidget {

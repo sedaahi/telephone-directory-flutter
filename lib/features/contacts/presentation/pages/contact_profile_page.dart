@@ -28,6 +28,24 @@ class _ContactProfilePageState extends State<ContactProfilePage> {
 
   bool get isSaved => _isInDeviceContacts;
 
+  bool _isBadPhotoValue(String? s) {
+    if (s == null) return true;
+    final t = s.trim();
+    return t.isEmpty ||
+        t.toLowerCase() == 'string' ||
+        t.toLowerCase() == 'null';
+  }
+
+  bool _isHttpUrl(String s) {
+    final t = s.trim();
+    return t.startsWith('http://') || t.startsWith('https://');
+  }
+
+  bool _fileExists(String s) {
+    final t = s.trim();
+    return File(t).existsSync();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -38,11 +56,16 @@ class _ContactProfilePageState extends State<ContactProfilePage> {
 
   Future<void> _generatePalette() async {
     final photoPath = _currentPhotoPath;
-    if (photoPath == null || photoPath.isEmpty) return;
+
+    // ✅ Guard’lar: string/null/url/boş/yok dosya -> palette üretme
+    if (_isBadPhotoValue(photoPath)) return;
+    final p = photoPath!.trim();
+    if (_isHttpUrl(p)) return;
+    if (!_fileExists(p)) return;
 
     try {
       final palette = await PaletteGenerator.fromImageProvider(
-        FileImage(File(photoPath)),
+        FileImage(File(p)),
         size: const Size(200, 200),
       );
 
@@ -79,7 +102,7 @@ class _ContactProfilePageState extends State<ContactProfilePage> {
       firstName: old.firstName,
       lastName: old.lastName,
       phone: old.phone,
-      photoUrl: _currentPhotoPath, // local path → bloc upload edecek
+      photoUrl: _currentPhotoPath, // local path
       isInDeviceContacts: _isInDeviceContacts,
     );
 
@@ -224,7 +247,6 @@ class _ContactProfilePageState extends State<ContactProfilePage> {
       _isInDeviceContacts = true;
     });
 
-    // Liste ekranındaki ikonların da güncellenmesi için
     context.read<ContactsBloc>().add(const LoadContacts());
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -296,6 +318,14 @@ class _ContactProfilePageState extends State<ContactProfilePage> {
     final contact = widget.contact;
     final theme = Theme.of(context);
 
+    // ✅ Avatar karar değişkenleri (UI’dan hemen önce)
+    final pRaw = _currentPhotoPath;
+    final p = pRaw?.trim();
+
+    final isBad = _isBadPhotoValue(p);
+    final isUrl = !isBad && _isHttpUrl(p!);
+    final fileOk = !isBad && !isUrl && _fileExists(p!);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
@@ -355,35 +385,37 @@ class _ContactProfilePageState extends State<ContactProfilePage> {
                         child: CircleAvatar(
                           radius: 55,
                           backgroundColor: Colors.grey.shade200,
-                          child:
-                              _currentPhotoPath != null &&
-                                  _currentPhotoPath!.isNotEmpty
-                              ? ClipOval(
-                                  child: _currentPhotoPath!.startsWith('http')
-                                      // Backend'den URL geldiyse
+                          child: ClipOval(
+                            child: !isBad
+                                ? (isUrl
                                       ? Image.network(
-                                          _currentPhotoPath!,
+                                          p,
                                           width: 110,
                                           height: 110,
                                           fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              _LetterAvatar(contact: contact),
                                         )
-                                      // Local path ise
-                                      : Image.file(
-                                          File(_currentPhotoPath!),
-                                          width: 110,
-                                          height: 110,
-                                          fit: BoxFit.cover,
-                                        ),
-                                )
-                              : Text(
-                                  contact.fullName.isNotEmpty
-                                      ? contact.fullName[0].toUpperCase()
-                                      : '?',
-                                  style: const TextStyle(
-                                    fontSize: 44,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                                      : (fileOk
+                                            ? Image.file(
+                                                File(p),
+                                                width: 110,
+                                                height: 110,
+                                                fit: BoxFit.cover,
+                                                errorBuilder:
+                                                    (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) {
+                                                      return _LetterAvatar(
+                                                        contact: contact,
+                                                      );
+                                                    },
+                                              )
+                                            : _LetterAvatar(contact: contact)))
+                                : _LetterAvatar(contact: contact),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -397,9 +429,7 @@ class _ContactProfilePageState extends State<ContactProfilePage> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 32),
-
                 TextFormField(
                   initialValue: contact.firstName,
                   readOnly: true,
@@ -441,9 +471,7 @@ class _ContactProfilePageState extends State<ContactProfilePage> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
                 SizedBox(
                   width: double.infinity,
                   child: isSaved
@@ -461,9 +489,7 @@ class _ContactProfilePageState extends State<ContactProfilePage> {
                           label: const Text('Save to My Phone Contact'),
                         ),
                 ),
-
                 const SizedBox(height: 8),
-
                 Text(
                   isSaved ? 'This contact is already saved your phone.' : '',
                   textAlign: TextAlign.center,
@@ -474,6 +500,25 @@ class _ContactProfilePageState extends State<ContactProfilePage> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LetterAvatar extends StatelessWidget {
+  final ContactEntity contact;
+  const _LetterAvatar({required this.contact});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 110,
+      height: 110,
+      child: Center(
+        child: Text(
+          contact.fullName.isNotEmpty ? contact.fullName[0].toUpperCase() : '?',
+          style: const TextStyle(fontSize: 44, fontWeight: FontWeight.w600),
         ),
       ),
     );
